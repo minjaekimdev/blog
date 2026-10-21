@@ -1,0 +1,44 @@
+---
+import { formatDate } from '../lib/format';
+import type { CollectionEntry } from 'astro:content';
+
+interface Props {
+  posts: CollectionEntry<'posts'>[];
+}
+
+const { posts } = Astro.props;
+---
+
+<ol class="post-list">
+  {posts.map((post, i) => (
+    <li class="post-item">
+      <span class="post-item__num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+      <a href={`/posts/${post.id}/`} class="post-item__link">
+        <div class="post-item__body">
+          <time class="post-item__time" datetime={post.data.date.toISOString()}>
+            {post.data.pinned && (
+              <svg class="post-item__pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="고정된 글">
+                <path d="M12 17v5" />
+                <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
+              </svg>
+            )}
+            {formatDate(post.data.date)}
+          </time>
+          </time>
+          <h3 class="post-item__title">{post.data.title}</h3>
+          <p class="post-item__desc">{post.data.description}</p>
+        </div>
+        {post.data.thumbnail && (
+          <img
+            class="post-item__thumb"
+            src={post.data.thumbnail}
+            alt=""
+            width="240"
+            height="150"
+            loading="lazy"
+          />
+        )}
+      </a>
+    </li>
+  ))}
+</ol>

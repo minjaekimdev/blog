@@ -1,0 +1,55 @@
+---
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PostToc from '../../components/PostToc.astro';
+import AuthorCard from '../../components/AuthorCard.astro';
+import Giscus from '../../components/Giscus.astro';
+import { formatDate, categoryLabel } from '../../lib/format';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('posts', ({ data }) => !data.draft);
+  return posts.map((post) => ({
+    params: { id: post.id },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const { Content, headings } = await render(post);
+---
+
+<BaseLayout title={post.data.title} description={post.data.description} thumbnail={post.data.thumbnail}>
+  <div class="post-layout">
+      {/* 좁은 화면에선 본문 위 접이식 목차로, 넓은 화면에선 오른쪽 사이드바로 렌더링된다 */}
+      <PostToc headings={headings} />
+
+      <article>
+        <header class="post-head">
+          <div class="post-head__meta">
+            <span class="post-head__category">{categoryLabel(post.data.category)}</span>
+            <time datetime={post.data.date.toISOString()}>{formatDate(post.data.date)}</time>
+          </div>
+          <h1 class="post-head__title">{post.data.title}</h1>
+          {post.data.thumbnail && (
+            <img class="post-head__thumb" src={post.data.thumbnail} alt="" width="1200" height="630" />
+          )}
+        </header>
+
+        <div class="prose">
+          <Content />
+        </div>
+
+        {post.data.tags.length > 0 && (
+          <ul class="tag-list">
+            {post.data.tags.map((tag) => (
+              <li class="tag"># {tag}</li>
+            ))}
+          </ul>
+        )}
+
+        <AuthorCard />
+
+        <Giscus />
+      </article>
+    </div>
+</BaseLayout>

@@ -1,0 +1,16 @@
+# build output
+dist/
+.astro/
+
+# dependencies
+node_modules/
+
+# environment (Giscus 설정 등 시크릿)
+.env
+.env.production
+
+# macOS
+.DS_Store
+
+# logs
+npm-debug.log*

@@ -1,0 +1,72 @@
+---
+interface Heading {
+  depth: number;
+  slug: string;
+  text: string;
+}
+
+interface Props {
+  headings: Heading[];
+}
+
+const { headings } = Astro.props;
+const tocHeadings = headings.filter((h) => h.depth === 2 || h.depth === 3);
+---
+
+{
+  tocHeadings.length > 0 && (
+    <>
+      {/* 좁은 화면(1100px 미만): 본문 위에 나타나는 접이식 목차 */}
+      <details class="toc-mobile">
+        <summary>목차</summary>
+        <ul>
+          {tocHeadings.map((h) => (
+            <li>
+              <a class={h.depth === 3 ? 'toc-depth-3' : undefined} href={`#${h.slug}`}>{h.text}</a>
+            </li>
+          ))}
+        </ul>
+      </details>
+
+      {/* 넓은 화면(1100px 이상): 오른쪽 여백에 붙어 있는 스티키 사이드바 목차 */}
+      <aside class="post-toc" aria-label="목차">
+        <p class="post-toc__title">목차</p>
+        <ul>
+          {tocHeadings.map((h) => (
+            <li>
+              <a class={h.depth === 3 ? 'toc-depth-3' : undefined} href={`#${h.slug}`}>{h.text}</a>
+            </li>
+          ))}
+        </ul>
+      </aside>
+    </>
+  )
+}
+
+<script>
+  // 스크롤 위치에 따라 현재 읽고 있는 목차 항목을 하이라이트합니다.
+  // (사이드바 목차와 모바일 목차 두 곳 모두에 적용)
+  const tocLinks = Array.from(
+    document.querySelectorAll<HTMLAnchorElement>('.post-toc a, .toc-mobile a')
+  );
+  if (tocLinks.length > 0) {
+    const headingEls = tocLinks
+      .map((a) => document.getElementById(decodeURIComponent(a.hash.slice(1))))
+      .filter((el): el is HTMLElement => el !== null);
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          tocLinks.forEach((a) => a.classList.remove('is-active'));
+          tocLinks
+            .filter((a) => decodeURIComponent(a.hash.slice(1)) === entry.target.id)
+            .forEach((a) => a.classList.add('is-active'));
+        }
+      },
+      { rootMargin: '-10% 0px -80% 0px' }
+    );
+
+    headingEls.forEach((el) => observer.observe(el));
+  }
+</script>

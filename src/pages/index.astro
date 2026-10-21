@@ -1,0 +1,43 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PostList from '../components/PostList.astro';
+import PostRows from '../components/PostRows.astro';
+
+const allPosts = await getCollection('posts', ({ data }) => !data.draft);
+
+// 고정된 글(pinned)을 맨 위로, 나머지는 최신순으로 정렬
+const sorted = [...allPosts].sort(
+  (a, b) =>
+    Number(b.data.pinned) - Number(a.data.pinned) ||
+    b.data.date.valueOf() - a.data.date.valueOf()
+);
+
+const articles = sorted.filter((p) => p.data.category === 'article').slice(0, 4);
+const retrospectives = sorted.filter((p) => p.data.category === 'retrospective').slice(0, 4);
+---
+
+<BaseLayout title="minjaekim | devlog">
+  <div class="container">
+    <section class="hero">
+      <h1 class="hero__name">Minjae Kim</h1>
+      <p class="hero__bio">안녕하세요, 프론트엔드 개발자 김민재입니다.</p>
+    </section>
+
+    <section class="section" aria-labelledby="home-articles">
+      <div class="section__head">
+        <h2 class="section__title" id="home-articles">Articles</h2>
+        <a class="section__more" href="/articles/">All articles →</a>
+      </div>
+      <PostList posts={articles} />
+    </section>
+
+    <section class="section" aria-labelledby="home-retrospective">
+      <div class="section__head">
+        <h2 class="section__title" id="home-retrospective">Retrospectives</h2>
+        <a class="section__more" href="/retrospective/">All retrospectives →</a>
+      </div>
+      <PostRows posts={retrospectives} />
+    </section>
+  </div>
+</BaseLayout>

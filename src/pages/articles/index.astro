@@ -1,0 +1,23 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PostList from '../../components/PostList.astro';
+
+const posts = (
+  await getCollection('posts', ({ data }) => !data.draft && data.category === 'article')
+).sort(
+  (a, b) =>
+    Number(b.data.pinned) - Number(a.data.pinned) ||
+    b.data.date.valueOf() - a.data.date.valueOf()
+);
+---
+
+<BaseLayout title="아티클" description="김민재의 기술 아티클 목록">
+  <div class="container">
+    <header class="page-head">
+      <h1 class="page-head__title">Articles</h1>
+      <p class="page-head__desc">개발하며 배운 것들을 정리합니다.</p>
+    </header>
+    <PostList posts={posts} />
+  </div>
+</BaseLayout>

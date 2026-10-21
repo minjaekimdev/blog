@@ -1,0 +1,109 @@
+---
+/**
+ * Giscus 댓글 위젯 (GitHub Discussions 기반)
+ *
+ * 활성화 조건 — 프로젝트 루트의 .env 파일에 아래 값들을 채우면 됩니다.
+ *   GISCUS_REPO=사용자명/저장소명        (예: minjaekimdev/blog)
+ *   GISCUS_REPO_ID=R_xxxxxxxx           (giscus.app에서 발급)
+ *   GISCUS_CATEGORY=Announcements
+ *   GISCUS_CATEGORY_ID=DIC_xxxxxxxx     (giscus.app에서 발급)
+ *
+ * 값이 없으면 세팅 가이드가 표시되고, 채우면 바로 댓글/좋아요가 활성화됩니다.
+ */
+
+const repo = import.meta.env.GISCUS_REPO as string | undefined;
+const repoId = import.meta.env.GISCUS_REPO_ID as string | undefined;
+const category = import.meta.env.GISCUS_CATEGORY as string | undefined;
+const categoryId = import.meta.env.GISCUS_CATEGORY_ID as string | undefined;
+
+const enabled = Boolean(repo && repoId && category && categoryId);
+---
+
+<section class="comments" aria-label="댓글">
+  {
+    enabled ? (
+      <div id="giscus-container" />
+    ) : (
+      <div class="comments__placeholder">
+        <p>
+          💬 댓글/좋아요 기능(Giscus)이 아직 활성화되지 않았습니다.
+        </p>
+        <p class="comments__guide">
+          .env 파일에 아래 4개 값을 채우면 바로 활성화됩니다.<br />
+          ① 블로그를 공개 GitHub 저장소에 푸시 → ② 저장소 Settings에서 Discussions
+          활성화 → ③
+          <a href="https://github.com/apps/giscus" target="_blank" rel="noopener noreferrer">giscus 앱 설치</a> → ④
+          <a href="https://giscus.app/ko" target="_blank" rel="noopener noreferrer">giscus.app</a>에서
+          GISCUS_REPO_ID, GISCUS_CATEGORY_ID 발급
+        </p>
+      </div>
+    )
+  }
+</section>
+
+<style>
+  .comments__guide {
+    margin-top: 0.75rem;
+    font-size: 0.85rem;
+    line-height: 1.8;
+  }
+  .comments__guide a {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+</style>
+
+{
+  enabled && (
+    <script define:vars={{ repo, repoId, category, categoryId }}>
+      // 현재 테마에 맞춰 giscus 스크립트를 동적으로 붙입니다.
+      const currentTheme = () =>
+        document.documentElement.dataset.theme === 'dark'
+          ? 'transparent_dark'
+          : 'light';
+
+      const container = document.getElementById('giscus-container');
+
+      const mountGiscus = () => {
+        const script = document.createElement('script');
+        script.src = 'https://giscus.app/client.js';
+        script.setAttribute('data-repo', repo);
+        script.setAttribute('data-repo-id', repoId);
+        script.setAttribute('data-category', category);
+        script.setAttribute('data-category-id', categoryId);
+        script.setAttribute('data-mapping', 'pathname');
+        script.setAttribute('data-strict', '0');
+        script.setAttribute('data-reactions-enabled', '1');
+        script.setAttribute('data-emit-metadata', '0');
+        script.setAttribute('data-input-position', 'top');
+        script.setAttribute('data-theme', currentTheme());
+        script.setAttribute('data-lang', 'ko');
+        script.setAttribute('data-loading', 'lazy');
+        script.crossOrigin = 'anonymous';
+        script.async = true;
+        container.replaceChildren(script);
+      };
+
+      mountGiscus();
+
+      // 라이트/다크 테마 전환 시 giscus 위젯 테마도 같이 바꿉니다.
+      const observer = new MutationObserver(() => {
+        const frame = document.querySelector('iframe.giscus-frame');
+        frame?.contentWindow?.postMessage(
+          {
+            giscus: {
+              setConfig: { theme: currentTheme() },
+            },
+          },
+          'https://giscus.app'
+        );
+      });
+
+      observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['data-theme'],
+      });
+    </script>
+  )
+}

@@ -1,0 +1,43 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="소개" description="프론트엔드 개발자 김민재 소개">
+  <div class="container">
+    <header class="page-head">
+      <h1 class="page-head__title">소개</h1>
+    </header>
+
+    <div class="about-profile">
+      <img
+        class="about-profile__avatar"
+        src="https://github.com/minjaekimdev.png"
+        alt="김민재 프로필 사진"
+        width="88"
+        height="88"
+      />
+      <div>
+        <p class="about-profile__name">김민재</p>
+        <p class="about-profile__role">프론트엔드 개발자</p>
+      </div>
+    </div>
+
+    <div class="prose">
+      <p>
+        안녕하세요, 사용자에게 보이는 화면을 만드는 일을 좋아하는 프론트엔드 개발자 김민재입니다.
+        좋은 코드는 잘 읽히는 코드라는 믿음으로 일하고, 배운 것을 글로 남기려 노력합니다.
+      </p>
+      <h2>관심사</h2>
+      <ul>
+        <li>웹 성능 최적화와 렌더링 파이프라인</li>
+        <li>타입스크립트와 안전한 상태 관리</li>
+        <li>개발 문화와 코드 리뷰</li>
+      </ul>
+      <h2>링크</h2>
+      <ul>
+        <li><a href="https://github.com/minjaekimdev" target="_blank" rel="noopener noreferrer">GitHub — @minjaekimdev</a></li>
+        <li><a href="/rss.xml">RSS 피드 구독하기</a></li>
+      </ul>
+    </div>
+  </div>
+</BaseLayout>
