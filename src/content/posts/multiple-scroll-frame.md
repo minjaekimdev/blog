@@ -187,7 +187,7 @@ rAF가 등장하기 전에는 화면을 움직이거나 애니메이션을 만�
 1. **브라우저의 렌더링 주기와 불일치**: `setInterval(fn, 16)`은 브라우저의 렌더링 주기와 아무런 연동이 없다. 두 주기가 엇박자를 내면 어떤 프레임은 갱신 기회를 놓치고, 이로 인해 프레임이 누락되는 버벅임이 발생한다.
 2. **불필요한 리소스 낭비**: 사용자가 다른 탭으로 이동하거나 창을 최소화해도 `setInterval`은 계속 코드를 실행해 CPU·GPU 자원을 낭비한다.
 3. **타이머의 정확성 문제**: 자바스크립트의 이벤트 루프 특성상 `setTimeout`이나 `setInterval`은 지정한 시간에 정확히 실행된다는 보장이 없다. 메인 스레드가 다른 무거운 작업으로 바쁘면 타이머가 밀리고, 애니메이션은 뚝뚝 끊긴다.
-4. 
+
 <figure>
   <img src="/images/setTimeout-frame-bad-annotated.png" alt="setTimeout vs rAF 성능 프로파일" />
   <figcaption>setTimeout vs rAF 성능 프로파일</figcaption>
