@@ -8,7 +8,7 @@ tags:
   ["event loop", "task queue", "requestAnimationFrame", "frontend", "browser"]
 ---
 
-※ 이 글은 고정 높이 가상 리스트를 구현하며 학습한 내용을 담고 있습니다. 구현에 사용된 전체 코드는 [virtual-list-optimization](https://github.com/minjaekimdev/virtual-list-optimization) 저장소에서 볼 수 있다.
+※ 이 글은 고정 높이 가상 리스트를 구현하며 학습한 내용을 담고 있습니다. 구현에 사용된 전체 코드는 [virtual-list-optimization](https://github.com/minjaekimdev/virtual-list-optimization) 에서 볼 수 있습니다.
 
 ## 배경: 왜 카드 10만 장을 한꺼번에 그리면 안 될까?
 
