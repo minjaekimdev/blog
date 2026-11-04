@@ -9,9 +9,12 @@ interface Props {
   thumbnail?: string;
 }
 
-const { title, description = '프론트엔드 개발자 김민재의 기술 아티클과 회고', thumbnail } = Astro.props;
+const { title, description = '프론트엔드 개발자 김민재의 기술 아티클과 회고', thumbnail = '/og-default.png' } = Astro.props;
 const siteName = '김민재 개발 블로그';
 const fullTitle = title === siteName ? title : `${title} · ${siteName}`;
+// 소셜 미리보기(OG)용 값들. thumbnail이 없으면 기본 이미지를 사용한다.
+const ogImage = new URL(thumbnail, Astro.site);
+const ogUrl = new URL(Astro.url.pathname, Astro.site);
 ---
 
 <!doctype html>
@@ -24,7 +27,12 @@ const fullTitle = title === siteName ? title : `${title} · ${siteName}`;
     <meta property="og:title" content={fullTitle} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
-    {thumbnail && <meta property="og:image" content={new URL(thumbnail, Astro.site)} />}
+    <meta property="og:url" content={ogUrl} />
+    <meta property="og:site_name" content={siteName} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="alternate" type="application/rss+xml" title={siteName} href="/rss.xml" />
     <link
