@@ -3,6 +3,8 @@ import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PostList from '../components/PostList.astro';
 import PostRows from '../components/PostRows.astro';
+import { groupTags, tagHref } from '../lib/tags';
+import { SITE } from '../config';
 
 const allPosts = await getCollection('posts', ({ data }) => !data.draft);
 
@@ -15,29 +17,51 @@ const sorted = [...allPosts].sort(
 
 const articles = sorted.filter((p) => p.data.category === 'article').slice(0, 4);
 const retrospectives = sorted.filter((p) => p.data.category === 'retrospective').slice(0, 4);
+
+// 모든 글에서 태그를 모아 글 수가 많은 순서로 정렬
+const tags = groupTags(sorted);
 ---
 
-<BaseLayout title="minjaekim | devlog">
-  <div class="container">
-    <section class="hero">
-      <h1 class="hero__name">Minjae Kim</h1>
-      <p class="hero__bio">안녕하세요, 프론트엔드 개발자 김민재입니다.</p>
-    </section>
+<BaseLayout title={SITE.name}>
+  <div class="home-layout">
+    <div class="home-main">
+      <section class="hero">
+        <h1 class="hero__name">Minjae Kim</h1>
+        <p class="hero__bio">안녕하세요, 프론트엔드 개발자 김민재입니다.</p>
+      </section>
 
-    <section class="section" aria-labelledby="home-articles">
-      <div class="section__head">
-        <h2 class="section__title" id="home-articles">Articles</h2>
-        <a class="section__more" href="/articles/">All articles →</a>
-      </div>
-      <PostList posts={articles} />
-    </section>
+      <section class="section" aria-labelledby="home-articles">
+        <div class="section__head">
+          <h2 class="section__title" id="home-articles">Articles</h2>
+          <a class="section__more" href="/articles/">All articles →</a>
+        </div>
+        <PostList posts={articles} />
+      </section>
 
-    <section class="section" aria-labelledby="home-retrospective">
+      <section class="section" aria-labelledby="home-retrospective">
+        <div class="section__head">
+          <h2 class="section__title" id="home-retrospective">Retrospectives</h2>
+          <a class="section__more" href="/retrospective/">All retrospectives →</a>
+        </div>
+        <PostRows posts={retrospectives} />
+      </section>
+    </div>
+
+    {/* 좁은 화면: 본문 아래 섹션으로 흐름 / 넓은 화면: 오른쪽 여백에 붙는 스티키 사이드바 */}
+    <aside class="home-tags" aria-label="태그 모아보기">
       <div class="section__head">
-        <h2 class="section__title" id="home-retrospective">Retrospectives</h2>
-        <a class="section__more" href="/retrospective/">All retrospectives →</a>
+        <h2 class="section__title">Tags</h2>
       </div>
-      <PostRows posts={retrospectives} />
-    </section>
+      <ul class="tag-cloud" role="list">
+        {tags.map((t) => (
+          <li>
+            <a class="tag-cloud__item" href={tagHref(t.value)}>
+              #{t.name}
+              <span class="tag-cloud__count">{t.posts.length}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </aside>
   </div>
 </BaseLayout>

@@ -38,6 +38,25 @@ draft: true                # 선택 — true면 빌드에서 제외
 본문 (마크다운)
 ```
 
+### 이미지 & 캡션
+
+이미지 파일은 `public/images/` 아래에 넣고, 본문에서는 `/`부터 시작하는 절대경로로 참조합니다. 파일명은 영어 소문자 + 하이픈을 권장합니다. (예: `detached-dom.png`)
+
+```md
+![대체 텍스트](/images/파일명.png)
+```
+
+캡션을 달 때는 `<figure>` + `<figcaption>`을 사용합니다. HTML 블록 안에서는 마크다운 이미지 문법(`![]()`)이 해석되지 않으므로, 이미지도 `<img>` 태그로 작성해야 합니다.
+
+```html
+<figure>
+  <img src="/images/파일명.png" alt="대체 텍스트" />
+  <figcaption>그림 1. 이미지에 대한 설명</figcaption>
+</figure>
+```
+
+캡션은 가운데 정렬된 작은 회색 글씨로 표시됩니다. (스타일: `global.css`의 `.prose figcaption`)
+
 ## 댓글/좋아요 (Giscus)
 
 GitHub 로그인으로 댓글을 달고 ❤️ 리액션(좋아요)을 남길 수 있습니다.

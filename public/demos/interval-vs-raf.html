@@ -1,0 +1,263 @@
+<!doctype html>
+<!-- 단일 파일이라 file:// 로 브라우저에 직접 열어도 실행된다 -->
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>setInterval vs requestAnimationFrame — 프레임 누락 직접 보기</title>
+<style>
+  :root {
+    --ink: #0f172a; --sub: #64748b; --line: #e2e8f0;
+    --interval: #f59e0b; --raf: #0ea5e9;
+    --miss: #ef4444; --ok: #10b981; --dup: #f59e0b;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 20px 22px; background: #fff; color: var(--ink);
+    font: 14px/1.75 system-ui, -apple-system, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    display: flex; justify-content: center;
+  }
+  /* 카드 장식(테두리·그림자)은 iframe 테두리가 대신하므로 내용물만 감싼다 */
+  .card {
+    width: 100%; max-width: 880px;
+  }
+  h1 { margin: 0 0 6px; font-size: 20px; letter-spacing: -0.02em; }
+  .lede { margin: 0 0 16px; font-size: 13.5px; color: var(--sub); }
+  .lede b.miss { color: var(--miss); }
+  .lede b.dup { color: var(--dup); }
+
+  .controls {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px;
+    padding: 12px 16px; margin-bottom: 8px;
+    background: #f8fafc; border: 1px solid var(--line); border-radius: 10px;
+  }
+  #toggle {
+    border: 0; border-radius: 8px; padding: 9px 22px; cursor: pointer;
+    background: #0f172a; color: #fff; font-family: inherit; font-size: 13px; font-weight: 600;
+  }
+  #toggle.on { background: #dc2626; }
+  .controls label { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--sub); }
+  .controls select {
+    font: inherit; font-size: 12.5px; padding: 4px 6px; color: #334155;
+    background: #fff; border: 1px solid var(--line); border-radius: 6px;
+  }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 10px 2px 20px; font-size: 12px; color: var(--sub); }
+  .legend .chip { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+
+  .lane { margin-bottom: 18px; }
+  .lane-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px; }
+  .badge {
+    font: 600 11px/1 var(--mono); color: #fff;
+    padding: 5px 9px; border-radius: 6px; letter-spacing: .01em; white-space: nowrap;
+  }
+  .badge.interval { background: var(--interval); }
+  .badge.raf { background: var(--raf); }
+  .rate { margin-left: auto; font: 500 12px var(--mono); color: var(--sub); white-space: nowrap; }
+  .rate b { color: var(--ink); font-weight: 600; }
+
+  .track {
+    position: relative; height: 42px; overflow: hidden;
+    background: #f8fafc; border: 1px solid var(--line); border-radius: 10px;
+  }
+  .dot {
+    position: absolute; top: 50%; left: 0;
+    width: 18px; height: 18px; margin: -9px 0 0 -9px;
+    border-radius: 50%; will-change: transform; transform: translate3d(10px, 0, 0);
+  }
+  .dot.interval { background: var(--interval); box-shadow: 0 1px 6px rgb(245 158 11 / .5), 0 0 0 4px rgb(245 158 11 / .15); }
+  .dot.raf      { background: var(--raf);      box-shadow: 0 1px 6px rgb(14 165 233 / .5), 0 0 0 4px rgb(14 165 233 / .15); }
+
+  /* 프레임 띠: 한 칸 = 하나의 화면 프레임 동안의 이동량 */
+  .strip { display: flex; gap: 2px; margin-top: 8px; height: 12px; }
+  .strip i { flex: 1; border-radius: 2px; background: #eef2f7; }
+  .counts { display: flex; gap: 18px; margin-top: 8px; font: 600 13px var(--mono); }
+  .counts .miss { color: var(--miss); }
+  .counts .dup { color: var(--dup); }
+  .counts .allgreen { color: var(--ok); }
+</style>
+</head>
+<body>
+<main class="card">
+  <div class="controls">
+    <button id="toggle">▶ 시작</button>
+    <label>타이머 주기
+      <select id="period">
+        <option value="16" selected>16ms — 프레임(16.7ms)과 엇박자</option>
+        <option value="20">20ms — 버벅임 극대화</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="legend">
+    <span><i class="chip" style="background:var(--miss)"></i>0스텝 — 이 프레임은 멈춤(누락)</span>
+    <span><i class="chip" style="background:var(--ok)"></i>1스텝 — 정상</span>
+    <span><i class="chip" style="background:var(--dup)"></i>2스텝+ — 두 칸 점프(중복)</span>
+  </div>
+
+  <section class="lane">
+    <div class="lane-head">
+      <span class="badge interval">setInterval(16ms)</span>
+      <span class="rate"><b id="intervalRate">—</b> 회/초 · 화면은 60fps</span>
+    </div>
+    <div class="track" id="track"><div class="dot interval" id="dotInterval"></div></div>
+    <div class="strip" id="stripInterval"></div>
+    <div class="counts">
+      <span class="miss">누락(멈춘 프레임) <b id="missCount">0</b></span>
+      <span class="dup">중복(두 칸 점프) <b id="dupCount">0</b></span>
+    </div>
+  </section>
+
+  <section class="lane">
+    <div class="lane-head">
+      <span class="badge raf">requestAnimationFrame</span>
+      <span class="rate"><b id="rafRate">—</b> fps</span>
+    </div>
+    <div class="track"><div class="dot raf" id="dotRaf"></div></div>
+    <div class="strip" id="stripRaf"></div>
+    <div class="counts">
+      <span class="allgreen">누락 <b id="rafMiss">0</b> · 중복 <b id="rafDup">0</b> — 프레임과 1:1이므로 항상 0</span>
+    </div>
+  </section>
+</main>
+
+<script>
+'use strict';
+
+// ============================================
+// 가설 (딱 두 가지):
+//   1. setInterval(16ms)은 프레임 주기와 무관하게 실행된다 →
+//      어떤 프레임은 이동이 0(누락: 화면이 멈춤), 어떤 프레임은 2(중복: 두 칸 점프).
+//   2. requestAnimationFrame은 프레임마다 정확히 1회 실행된다 → 누락·중복이 없다.
+//
+// 방법:
+//   두 점 모두 콜백 1회당 똑같이 STEP px을 더한다(스텝 기반).
+//   rAF 루프가 "그려진 프레임"마다 직전 프레임 사이에 실행된 횟수를 세서
+//   프레임 띠(한 칸 = 한 프레임)에 기록한다. 0이면 빨강, 1이면 초록, 2 이상이면 주황.
+// ============================================
+
+const STEP = 10;   // 콜백 1회당 이동량 — 두 레인 동일
+const RING = 60;   // 프레임 띠 길이(최근 60프레임)
+
+const $ = (id) => document.getElementById(id);
+const els = {
+  toggle: $('toggle'), period: $('period'), track: $('track'),
+  dots: { interval: $('dotInterval'), raf: $('dotRaf') },
+  strips: { interval: $('stripInterval'), raf: $('stripRaf') },
+  intervalRate: $('intervalRate'), rafRate: $('rafRate'),
+  missCount: $('missCount'), dupCount: $('dupCount'),
+};
+
+const laneInterval = { pos: 10, dir: 1, ticks: 0, missed: 0, doubled: 0, dot: $('dotInterval') };
+const laneRaf = { pos: 10, dir: 1, dot: $('dotRaf') };
+
+let running = false, timerMs = 16;
+let intervalId = 0, rafId = 0;
+let trackW = 0, t0 = 0;
+let windowStart = 0, windowTicks = 0, windowFrames = 0;
+
+// ---------- 프레임 띠: 한 칸 = 한 프레임 ----------
+const ringCells = {
+  interval: Array.from({ length: RING }, () => els.strips.interval.appendChild(document.createElement('i'))),
+  raf: Array.from({ length: RING }, () => els.strips.raf.appendChild(document.createElement('i'))),
+};
+const ringPtr = { interval: 0, raf: 0 };
+const CELL_COLOR = ['var(--miss)', 'var(--ok)', 'var(--dup)'];
+
+function pushCell(lane, value) {
+  const cell = ringCells[lane][ringPtr[lane]];
+  cell.style.background = value === 0 ? CELL_COLOR[0] : value === 1 ? CELL_COLOR[1] : CELL_COLOR[2];
+  ringPtr[lane] = (ringPtr[lane] + 1) % RING;
+}
+
+// ---------- 이동: 콜백 1회당 STEP px (왕복) ----------
+function step(lane) {
+  const max = trackW - 10;
+  lane.pos += STEP * lane.dir;
+  if (lane.pos > max) { lane.pos = max - (lane.pos - max); lane.dir = -1; }
+  if (lane.pos < 10)  { lane.pos = 10 + (10 - lane.pos);  lane.dir = 1; }
+  lane.dot.style.transform = `translate3d(${lane.pos.toFixed(1)}px,0,0)`;
+}
+
+// ---------- 드라이버 1: setInterval ----------
+function intervalTick() {
+  step(laneInterval);
+  laneInterval.ticks++;   // 다음 프레임이 그려질 때까지의 실행 횟수를 셋는다
+  windowTicks++;
+}
+
+// ---------- 드라이버 2: rAF — 그려질 프레임마다 정확히 1회 ----------
+function frame() {
+  // ① 직전 프레임 사이에 interval이 몇 번 실행됐는지 기록: 0=누락, 1=정상, 2+=중복
+  const t = laneInterval.ticks;
+  laneInterval.ticks = 0;
+  pushCell('interval', t);
+  if (t === 0) laneInterval.missed++;
+  else if (t >= 2) laneInterval.doubled++;
+
+  // ② rAF 레인: 이 프레임에서 정확히 1스텝 — 누락·중복이 구조적으로 불가능
+  step(laneRaf);
+  pushCell('raf', 1);
+
+  windowFrames++;
+  if (performance.now() - windowStart >= 500) updateSummary();
+  rafId = requestAnimationFrame(frame);
+}
+
+function updateSummary() {
+  const sec = (performance.now() - windowStart) / 1000;
+  els.intervalRate.textContent = (windowTicks / sec).toFixed(1);
+  els.rafRate.textContent = (windowFrames / sec).toFixed(1);
+  els.missCount.textContent = laneInterval.missed.toLocaleString();
+  els.dupCount.textContent = laneInterval.doubled.toLocaleString();
+  windowStart = performance.now();
+  windowTicks = 0;
+  windowFrames = 0;
+}
+
+// ---------- 시작/정지 ----------
+function start() {
+  trackW = els.track.clientWidth;
+  t0 = windowStart = performance.now();
+  // 리셋
+  laneInterval.pos = laneRaf.pos = 10;
+  laneInterval.dir = laneRaf.dir = 1;
+  laneInterval.ticks = laneInterval.missed = laneInterval.doubled = 0;
+  windowTicks = windowFrames = 0;
+  ringCells.interval.concat(ringCells.raf).forEach((c) => (c.style.background = ''));
+  ringPtr.interval = ringPtr.raf = 0;
+  els.intervalRate.textContent = els.rafRate.textContent = '—';
+  els.missCount.textContent = els.dupCount.textContent = '0';
+
+  intervalId = setInterval(intervalTick, timerMs);
+  rafId = requestAnimationFrame(frame);
+  running = true;
+  els.toggle.textContent = '■ 정지';
+  els.toggle.classList.add('on');
+}
+
+function stop() {
+  clearInterval(intervalId);
+  cancelAnimationFrame(rafId);
+  running = false;
+  els.toggle.textContent = '▶ 시작';
+  els.toggle.classList.remove('on');
+}
+
+els.toggle.addEventListener('click', () => (running ? stop() : start()));
+
+els.period.addEventListener('change', () => {
+  timerMs = Number(els.period.value);
+  if (running) {
+    clearInterval(intervalId);
+    intervalId = setInterval(intervalTick, timerMs);
+  }
+});
+
+window.addEventListener('resize', () => { trackW = els.track.clientWidth; });
+</script>
+<!-- iframe으로 삽입될 때 실제 높이를 부모 페이지에 알려준다 -->
+<script src="/demos/demo-height.js"></script>
+</body>
+</html>

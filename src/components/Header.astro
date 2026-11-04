@@ -1,4 +1,6 @@
 ---
+import { SITE } from '../config';
+
 const currentPath = Astro.url.pathname;
 
 const navItems = [
@@ -13,7 +15,7 @@ const isActive = (href: string) =>
 
 <header class="site-header">
   <div class="container container--wide site-header__inner">
-    <a href="/" class="logo">minjae.dev <em>devlog</em></a>
+    <a href="/" class="logo">{SITE.name}</a>
     <nav class="nav" aria-label="주요 메뉴">
       {navItems.map((item) => (
         <a href={item.href} aria-current={isActive(item.href) ? 'page' : undefined}>

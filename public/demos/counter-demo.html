@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>카운터 데모</title>
+
+  <!-- iframe 안은 블로그 본문 CSS와 완전히 분리되므로 스타일을 여기서 직접 작성 -->
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: #f6f6f4;
+      color: #1d1d1f;
+      font-family: 'Pretendard Variable', Pretendard, -apple-system, sans-serif;
+    }
+
+    .card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      padding: 1.5rem 2.5rem;
+      background: #ffffff;
+      border: 1px solid #e8e8ed;
+      border-radius: 12px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.06);
+    }
+
+    .count {
+      font-size: 3rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    button {
+      padding: 0.5rem 1.25rem;
+      font-size: 1rem;
+      font-family: inherit;
+      background: #0069c2;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.1s ease, opacity 0.1s ease;
+    }
+
+    button:hover {
+      opacity: 0.9;
+    }
+
+    button:active {
+      transform: scale(0.96);
+    }
+
+    .reset {
+      background: #e8e8ed;
+      color: #515154;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="count" id="count">0</div>
+    <div class="buttons">
+      <button id="minus">−1</button>
+      <button id="plus">+1</button>
+      <button id="reset" class="reset">초기화</button>
+    </div>
+  </div>
+
+  <script>
+    const countEl = document.getElementById('count');
+    let count = 0;
+
+    function render() {
+      countEl.textContent = count;
+    }
+
+    document.getElementById('plus').addEventListener('click', () => {
+      count++;
+      render();
+    });
+
+    document.getElementById('minus').addEventListener('click', () => {
+      count--;
+      render();
+    });
+
+    document.getElementById('reset').addEventListener('click', () => {
+      count = 0;
+      render();
+    });
+  </script>
+</body>
+</html>

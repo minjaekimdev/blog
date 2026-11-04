@@ -2,9 +2,9 @@
 import { getCollection, render } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PostToc from '../../components/PostToc.astro';
-import AuthorCard from '../../components/AuthorCard.astro';
 import Giscus from '../../components/Giscus.astro';
 import { formatDate, categoryLabel } from '../../lib/format';
+import { tagHref } from '../../lib/tags';
 
 export async function getStaticPaths() {
   const posts = await getCollection('posts', ({ data }) => !data.draft);
@@ -42,12 +42,12 @@ const { Content, headings } = await render(post);
         {post.data.tags.length > 0 && (
           <ul class="tag-list">
             {post.data.tags.map((tag) => (
-              <li class="tag"># {tag}</li>
+              <li class="tag">
+                <a href={tagHref(tag.toLowerCase())}># {tag}</a>
+              </li>
             ))}
           </ul>
         )}
-
-        <AuthorCard />
 
         <Giscus />
       </article>

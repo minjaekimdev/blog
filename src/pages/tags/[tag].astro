@@ -1,0 +1,48 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PostList from '../../components/PostList.astro';
+import { groupTags, tagHref, type TagGroup } from '../../lib/tags';
+import { SITE } from '../../config';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('posts', ({ data }) => !data.draft);
+  const tags = groupTags(posts);
+  // 태그 하나당 /tags/{태그}/ 페이지를 정적으로 생성한다.
+  // 모든 태그 목록도 함께 내려줘서 페이지 안에서 태그를 바꿔볼 수 있게 한다.
+  return tags.map((tag) => ({
+    params: { tag: tag.value },
+    props: { tag, tags },
+  }));
+}
+
+interface Props {
+  tag: TagGroup;
+  tags: TagGroup[];
+}
+
+const { tag, tags } = Astro.props;
+---
+
+<BaseLayout title={`#${tag.name} | ${SITE.name}`} description={`#${tag.name} 태그가 붙은 글 ${tag.posts.length}개`}>
+  <div class="container">
+    <header class="page-head">
+      <h1 class="page-head__title">#{tag.name}</h1>
+      <p class="page-head__desc">{tag.posts.length}개의 글이 있습니다.</p>
+    </header>
+
+    <nav class="tag-nav" aria-label="다른 태그 보기">
+      <ul class="tag-nav__list">
+        {tags.map((t) => (
+          <li>
+            <a class={`tag-nav__item${t.value === tag.value ? ' is-active' : ''}`} href={tagHref(t.value)}>
+              #{t.name} <span class="tag-nav__count">{t.posts.length}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+
+    <PostList posts={tag.posts} />
+  </div>
+</BaseLayout>

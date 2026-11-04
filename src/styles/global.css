@@ -146,13 +146,6 @@ main {
   white-space: nowrap;
 }
 
-.logo em {
-  font-style: normal;
-  color: var(--text-3);
-  font-weight: 500;
-  font-size: 0.9rem;
-}
-
 .nav {
   display: flex;
   align-items: center;
@@ -703,6 +696,22 @@ main {
   border: 1px solid var(--border);
 }
 
+.prose figure {
+  margin-block: 2rem;
+}
+
+.prose figure img {
+  margin-block: 0;
+}
+
+.prose figcaption {
+  margin-top: 0.75rem;
+  text-align: center;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--text-3);
+}
+
 .prose :not(pre) > code {
   font-family: var(--font-mono);
   font-size: 0.86em;
@@ -777,37 +786,169 @@ main {
   border-radius: 999px;
 }
 
-/* =========================================
-   Author Card
-   ========================================= */
-.author-card {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-top: 3.5rem;
-  padding: 1.25rem 1.4rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--bg-soft);
+/* 글 페이지의 태그 칩을 링크로 만들 때 스타일이 틀어지지 않게 한다 */
+.tag a {
+  color: inherit;
+  text-decoration: none;
 }
 
-.author-card__avatar {
-  width: 3.5rem;
-  height: 3.5rem;
-  border-radius: 50%;
-  border: 1px solid var(--border);
-}
-
-.author-card__name {
-  font-weight: 700;
-}
-
-.author-card__name a:hover {
+.tag a:hover {
   color: var(--accent);
 }
 
-.author-card__role {
-  font-size: 0.9rem;
+/* =========================================
+   Tag Cloud (홈 태그 모아보기)
+   ========================================= */
+.tag-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tag-cloud__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-2);
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.tag-cloud__item:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.tag-cloud__count {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-3);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0 0.4rem;
+  line-height: 1.4;
+}
+
+/* =========================================
+   Home Layout (홈 태그 사이드바)
+   ========================================= */
+/* 좁은 화면: 홈 본문은 44rem 중앙 정렬, 태그는 맨 아래 섹션으로 흐른다 */
+.home-layout {
+  max-width: var(--content-width);
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+}
+
+/* 마크업 순서가 hero → 섹션들 → Tags이므로 좁은 화면에선 규칙 없이 하단에 온다 */
+.home-tags {
+  margin-top: 2.25rem;
+}
+
+/* 넓은 화면(1100px 이상): [여백] [본문 44rem] [태그] 3열 그리드.
+   본문 열이 화면 중앙에 오고, 태그는 오른쪽 여백에 스티키로 떠 있다.
+   (글 페이지의 목차 사이드바와 같은 구조) */
+@media (min-width: 1100px) {
+  .home-layout {
+    max-width: none;
+    width: min(100% - 2.5rem, 72rem);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, var(--content-width)) 11rem;
+    column-gap: 3rem;
+  }
+
+  .home-main {
+    grid-column: 2;
+    min-width: 0;
+  }
+
+  .home-tags {
+    grid-column: 3;
+    grid-row: 1;
+    align-self: start;
+    position: sticky;
+    top: calc(var(--header-height) + 2rem);
+    margin-top: 4.5rem; /* hero 위쪽 여백과 시각적 시작점을 맞춤 */
+  }
+
+  /* 사이드바에서는 제목과 칩을 조금 더 조밀하게 */
+  .home-tags .section__head {
+    margin-bottom: 0.9rem;
+  }
+
+  .home-tags .section__title {
+    font-size: 1rem;
+  }
+
+  .home-tags .tag-cloud {
+    gap: 0.4rem;
+  }
+
+  .home-tags .tag-cloud__item {
+    font-size: 0.78rem;
+    padding: 0.25rem 0.6rem;
+  }
+}
+
+/* =========================================
+   Tag Nav (태그 모아보기 페이지 상단)
+   ========================================= */
+.tag-nav {
+  margin-bottom: 2rem;
+}
+
+.tag-nav__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tag-nav__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-3);
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.tag-nav__item:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.tag-nav__item.is-active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.tag-nav__count {
+  font-size: 0.7rem;
+  font-weight: 700;
   color: var(--text-3);
 }
 
@@ -885,7 +1026,7 @@ main {
 }
 
 /* =========================================
-   About
+   About (Contact 페이지 프로필)
    ========================================= */
 .about-profile {
   display: flex;

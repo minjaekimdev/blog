@@ -1,11 +1,12 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { CONTACT } from '../config';
 ---
 
-<BaseLayout title="소개" description="프론트엔드 개발자 김민재 소개">
+<BaseLayout title="Contact" description="프론트엔드 개발자 김민재에게 연락하기">
   <div class="container">
     <header class="page-head">
-      <h1 class="page-head__title">소개</h1>
+      <h1 class="page-head__title">Contact</h1>
     </header>
 
     <div class="about-profile">
@@ -24,19 +25,15 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
     <div class="prose">
       <p>
-        안녕하세요, 사용자에게 보이는 화면을 만드는 일을 좋아하는 프론트엔드 개발자 김민재입니다.
-        좋은 코드는 잘 읽히는 코드라는 믿음으로 일하고, 배운 것을 글로 남기려 노력합니다.
+        다양한 사람들과 교류하며 생각을 나누는 것은 저를 나아가게 하는 원동력입니다.
+        언제든 편하게 연락 주세요.
       </p>
-      <h2>관심사</h2>
+
+      <h2>연락처</h2>
       <ul>
-        <li>웹 성능 최적화와 렌더링 파이프라인</li>
-        <li>타입스크립트와 안전한 상태 관리</li>
-        <li>개발 문화와 코드 리뷰</li>
-      </ul>
-      <h2>링크</h2>
-      <ul>
-        <li><a href="https://github.com/minjaekimdev" target="_blank" rel="noopener noreferrer">GitHub — @minjaekimdev</a></li>
-        <li><a href="/rss.xml">RSS 피드 구독하기</a></li>
+        <li>Phone — <a href={CONTACT.phoneHref}>{CONTACT.phoneDisplay}</a></li>
+        <li>Email — <a href={`mailto:${CONTACT.email}`}>{CONTACT.email}</a></li>
+        <li>LinkedIn — <a href={CONTACT.linkedin} target="_blank" rel="noopener noreferrer">linkedin.com/in/김민재</a></li>
       </ul>
     </div>
   </div>

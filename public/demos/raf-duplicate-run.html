@@ -1,0 +1,239 @@
+<!doctype html>
+<!-- 단일 파일 — file:// 로 브라우저에 직접 열어도 실행된다 -->
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>rAF는 실행을 미룰 뿐, 중복 실행은 막지 않는다</title>
+<style>
+  :root {
+    --ink: #0f172a; --sub: #64748b; --line: #e2e8f0;
+    --bad: #ef4444; --ok: #10b981;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 20px 22px; background: #fff; color: var(--ink);
+    font: 14px/1.75 system-ui, -apple-system, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { margin: 0 0 6px; font-size: 19px; letter-spacing: -0.02em; }
+  .lede { margin: 0 0 14px; font-size: 13.5px; color: var(--sub); }
+  .lede b { color: var(--ink); }
+
+  /* 컨트롤 바 */
+  .controls {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px;
+    padding: 12px 16px; margin-bottom: 14px;
+    background: #f8fafc; border: 1px solid var(--line); border-radius: 10px;
+  }
+  .controls label { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--sub); }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .seg button {
+    border: 0; background: #fff; padding: 6px 14px; cursor: pointer;
+    font: 600 12.5px var(--mono); color: var(--sub);
+    border-right: 1px solid var(--line);
+  }
+  .seg button:last-child { border-right: 0; }
+  .seg button.on { background: var(--ink); color: #fff; }
+  #fire {
+    border: 0; border-radius: 8px; padding: 9px 22px; cursor: pointer;
+    background: #0f172a; color: #fff; font-family: inherit; font-size: 13px; font-weight: 600;
+  }
+  #reset {
+    border: 1px solid var(--line); border-radius: 8px; padding: 8px 14px; cursor: pointer;
+    background: #fff; color: var(--sub); font-family: inherit; font-size: 12.5px;
+  }
+
+  /* 두 카드 */
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+  .card {
+    border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px 16px;
+    background: #fff;
+  }
+  .card.pulse { animation: pulse .45s ease; }
+  @keyframes pulse {
+    0% { background: #fef2f2; }
+    100% { background: #fff; }
+  }
+  .card.right.pulse { animation-name: pulseOk; }
+  @keyframes pulseOk {
+    0% { background: #ecfdf5; }
+    100% { background: #fff; }
+  }
+  .head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .badge {
+    font: 600 11px/1 var(--mono); color: #fff;
+    padding: 5px 9px; border-radius: 6px; white-space: nowrap;
+  }
+  .badge.bad { background: var(--bad); }
+  .badge.ok { background: var(--ok); }
+  .head span { font-size: 12.5px; color: var(--sub); }
+  pre {
+    margin: 0 0 12px; padding: 10px 12px; overflow-x: auto;
+    background: #f8fafc; border: 1px solid var(--line); border-radius: 8px;
+    font: 12px/1.6 var(--mono); color: #334155;
+  }
+  .count-label { font-size: 12.5px; color: var(--sub); }
+  .count {
+    font: 700 34px/1.2 var(--mono); font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
+  }
+
+  /* 결과 상태줄 */
+  .result {
+    margin-top: 14px; padding: 12px 16px; min-height: 46px;
+    background: #f8fafc; border: 1px solid var(--line); border-radius: 10px;
+    font-size: 13.5px; color: var(--sub);
+  }
+  .result b { font-family: var(--mono); font-size: 15px; }
+  .result .bad { color: var(--bad); }
+  .result .ok { color: var(--ok); }
+  .result .why { display: block; margin-top: 2px; font-size: 12.5px; }
+  .result .why:empty { display: none; }
+</style>
+</head>
+<body>
+  <div class="controls">
+    <label>호출 횟수
+      <span class="seg" id="seg">
+        <button data-times="1">1</button>
+        <button data-times="5" class="on">5</button>
+        <button data-times="10">10</button>
+      </span>
+    </label>
+    <button id="fire">▶ 핸들러 호출</button>
+    <button id="reset">초기화</button>
+  </div>
+
+  <div class="grid">
+    <div class="card left" id="cardLeft">
+      <div class="head"><span class="badge bad">rAF만 사용</span><span>중복 실행 막지 않음</span></div>
+<pre>const onScroll = () =&gt; {
+  requestAnimationFrame(() =&gt; {
+    render();
+  });
+};</pre>
+      <div class="count-label">render() 실행 횟수</div>
+      <div class="count" id="countLeft">0</div>
+    </div>
+
+    <div class="card right" id="cardRight">
+      <div class="head"><span class="badge ok">rAF + flag</span><span>프레임당 1회 보장</span></div>
+<pre>let flag = false;
+const onScroll = () =&gt; {
+  if (flag === true) return;
+  flag = true;
+  requestAnimationFrame(() =&gt; {
+    flag = false;
+    render();
+  });
+};</pre>
+      <div class="count-label">render() 실행 횟수</div>
+      <div class="count" id="countRight">0</div>
+    </div>
+  </div>
+
+  <div class="result" id="result">버튼을 누르면 핸들러가 선택한 횟수만큼 같은 태스크에서 호출된다. rAF 콜백은 등록 즉시 실행되지 않고, 브라우저가 다음으로 렌더링을 진행할 때 가장 먼저 실행된다.</div>
+
+<script>
+'use strict';
+
+const $ = (id) => document.getElementById(id);
+const els = {
+  fire: $('fire'), reset: $('reset'), result: $('result'),
+  countLeft: $('countLeft'), countRight: $('countRight'),
+  cardLeft: $('cardLeft'), cardRight: $('cardRight'),
+};
+
+let times = 5;
+let leftCount = 0, rightCount = 0;
+
+// ---------- 섹션의 코드와 동일한 두 구현 ----------
+// (1) rAF만 사용: 호출 횟수만큼 예약이 쌓인다
+const onScrollNoGuard = () => {
+  requestAnimationFrame(() => renderNoGuard());
+};
+
+// (2) rAF + flag: 이번 프레임에 이미 예약됐으면 무시한다
+let flag = false;
+const onScrollWithFlag = () => {
+  if (flag === true) return;
+  flag = true;
+  requestAnimationFrame(() => {
+    flag = false;
+    renderFlag();
+  });
+};
+
+// ---------- render(): 여기서는 카운터 증가가 전부다 ----------
+function renderNoGuard() {
+  leftCount++;
+  els.countLeft.textContent = leftCount;
+  pulse(els.cardLeft);
+}
+function renderFlag() {
+  rightCount++;
+  els.countRight.textContent = rightCount;
+  pulse(els.cardRight);
+}
+
+function pulse(card) {
+  card.classList.remove('pulse');
+  void card.offsetWidth; // 리플로우를 강제해 애니메이션을 처음부터 다시 재생
+  card.classList.add('pulse');
+}
+
+// ---------- 버튼 동작 ----------
+els.fire.addEventListener('click', () => {
+  const beforeLeft = leftCount, beforeRight = rightCount;
+
+  // 같은 태스크에서 동기 호출 → 전부 "같은 프레임"에 속한다.
+  // (실제 scroll 이벤트가 아니므로 브라우저의 이벤트 병합도 개입하지 않는다)
+  for (let i = 0; i < times; i++) onScrollNoGuard();
+  for (let i = 0; i < times; i++) onScrollWithFlag();
+
+  els.result.textContent = '핸들러 ' + times + '회 호출됨 — rAF 콜백은 다음 렌더링 단계까지 대기 중…';
+
+  // 이 rAF는 두 카드의 콜백보다 늦게 등록됐으므로, 같은 렌더링 단계에서 맨 나중에 실행된다.
+  // → 그 단계에서 각각 몇 번 실행됐는지 정확히 집계할 수 있다.
+  requestAnimationFrame(() => {
+    const dLeft = leftCount - beforeLeft;
+    const dRight = rightCount - beforeRight;
+    showResult(dLeft, dRight);
+  });
+});
+
+function showResult(dLeft, dRight) {
+  const same = dLeft === dRight;
+  let html =
+    '이번 프레임 — rAF만: <b class="bad">+' + dLeft + '회</b>' +
+    ' · rAF+flag: <b class="ok">+' + dRight + '회</b>';
+  let why = '';
+  if (dLeft > 1) {
+    why = '실행 시점만 렌더링 직전으로 미뤄졌을 뿐, 호출 횟수만큼 그대로 실행됐다.';
+  } else if (same) {
+    why = '한 프레임에 한 번만 발생하면 두 방식에 차이가 없다. 실제 브라우저가 스크롤을 병합하는 이유이기도 하다.';
+  }
+  els.result.innerHTML = html + '<span class="why">' + why + '</span>';
+}
+
+// 호출 횟수 선택
+document.getElementById('seg').addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  times = Number(btn.dataset.times);
+  document.querySelectorAll('#seg button').forEach((b) => b.classList.toggle('on', b === btn));
+});
+
+els.reset.addEventListener('click', () => {
+  leftCount = rightCount = 0;
+  els.countLeft.textContent = '0';
+  els.countRight.textContent = '0';
+  els.result.textContent = '버튼을 누르면 핸들러가 선택한 횟수만큼 같은 태스크에서 호출된다. rAF 콜백은 등록 즉시 실행되지 않고, 브라우저가 다음으로 렌더링을 진행할 때 가장 먼저 실행된다.';
+});
+</script>
+
+<!-- iframe으로 삽입될 때 실제 높이를 부모 페이지에 알려준다 -->
+<script src="/demos/demo-height.js"></script>
+</body>
+</html>
