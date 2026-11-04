@@ -3,8 +3,8 @@ import { defineConfig } from 'astro/config';
 
 // https://astro.build/config
 export default defineConfig({
-  // TODO: 실제 배포 도메인으로 변경하세요 (RSS/Sitemap에 사용됩니다)
-  site: 'https://minjaekim.blog',
+  // 배포 도메인 (RSS/Sitemap에 사용됩니다). 도메인 구매 시 이 값만 바꾸면 됩니다.
+  site: 'https://blog.minjaekimm1.workers.dev',
   markdown: {
     shikiConfig: {
       // 라이트/다크 테마에 따라 코드 하이라이트가 바뀌도록 dual-theme 설정

@@ -5,7 +5,7 @@ export const SITE = {
   title: 'minjaekim.blog',
   description: '프론트엔드 개발자 김민재의 개발 블로그',
   author: '김민재',
-  url: 'https://minjaekim.blog',
+  url: 'https://blog.minjaekimm1.workers.dev',
 };
 
 // ── 연락처 ─────────────────────────────────────────────────────
