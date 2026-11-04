@@ -1,6 +1,7 @@
 ---
 title: "가상 스크롤의 주인공은 rAF가 아니다"
 description: "고정 높이 가상 리스트를 구현하며 브라우저 작동 원리 알아보기"
+thumbnail: "/thumbnails/multiple-scroll-frame.png" # 소셜 미리보기(OG) 이미지 — 1200x630 권장
 date: 2026-10-29
 category: "article" # article(아티클) 또는 retrospective(회고) 둘 중 하나만 가능
 pinned: true
