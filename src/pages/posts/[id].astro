@@ -30,9 +30,6 @@ const { Content, headings } = await render(post);
             <time datetime={post.data.date.toISOString()}>{formatDate(post.data.date)}</time>
           </div>
           <h1 class="post-head__title">{post.data.title}</h1>
-          {post.data.thumbnail && (
-            <img class="post-head__thumb" src={post.data.thumbnail} alt="" width="1200" height="630" />
-          )}
         </header>
 
         <div class="prose">

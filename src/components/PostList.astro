@@ -24,20 +24,9 @@ const { posts } = Astro.props;
             )}
             {formatDate(post.data.date)}
           </time>
-          </time>
           <h3 class="post-item__title">{post.data.title}</h3>
           <p class="post-item__desc">{post.data.description}</p>
         </div>
-        {post.data.thumbnail && (
-          <img
-            class="post-item__thumb"
-            src={post.data.thumbnail}
-            alt=""
-            width="240"
-            height="150"
-            loading="lazy"
-          />
-        )}
       </a>
     </li>
   ))}
