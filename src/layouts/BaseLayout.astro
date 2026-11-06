@@ -21,7 +21,8 @@ const fullTitle = title === siteName ? title : `${title} · ${siteName}`;
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
-    <meta property="og:title" content={fullTitle} />
+    {/* og:title은 사이트 이름 접미사 없이 순수 제목만 사용한다 (소셜 미리보기 카드용) */}
+    <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
     {thumbnail && <meta property="og:image" content={new URL(thumbnail, Astro.site)} />}
