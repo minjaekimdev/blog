@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<!--
+  썸네일 템플릿 (1200x630, OG 이미지용)
+  사용법: 이 파일을 임시 디렉터리로 복사한 뒤, 아래 [수정] 표시 3곳(제목/태그/날짜)만 바꾼다.
+  렌더링 절차는 AGENTS.md "썸네일 제작" 참고.
+-->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 1200px;
+    height: 630px;
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse 900px 500px at 62% 42%, #131822 0%, rgba(19, 24, 34, 0) 65%),
+      #0a0d12;
+    font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+    position: relative;
+    color: #fff;
+  }
+
+  /* 좌상단 로고 + 사이트명 */
+  .brand {
+    position: absolute;
+    top: 56px;
+    left: 84px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .brand .badge {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    background: #6f76f2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: 800;
+  }
+  .brand .site {
+    font-size: 27px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  /* 제목 — 핵심 단어 하나만 .accent(#4d9dff)로 강조한다 */
+  .title {
+    position: absolute;
+    top: 172px;
+    left: 84px;
+    font-size: 78px;
+    font-weight: 800;
+    line-height: 1.24;
+    letter-spacing: -0.02em;
+  }
+  .title .accent { color: #4d9dff; }
+
+  /* 태그 칩 — 글 frontmatter의 태그와 일치시킨다 */
+  .chips {
+    position: absolute;
+    top: 442px;
+    left: 84px;
+    display: flex;
+    gap: 14px;
+  }
+  .chip {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 22px;
+    font-weight: 500;
+    color: #9fb8dc;
+    border: 1.5px solid #3b4759;
+    border-radius: 999px;
+    padding: 10px 24px;
+  }
+
+  /* 하단 메타 — 회고 글이면 ARTICLE 대신 RETROSPECTIVE */
+  .meta {
+    position: absolute;
+    top: 550px;
+    left: 84px;
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 21px;
+    color: #6b7280;
+    letter-spacing: 0.08em;
+  }
+</style>
+</head>
+<body>
+  <div class="brand">
+    <div class="badge">M</div>
+    <div class="site">minjaekim.blog</div>
+  </div>
+
+  <!-- [수정 1] 제목: 2~3줄로 줄바꿈, 핵심 단어를 <span class="accent">로 감싼다 -->
+  <h1 class="title">React의 탄생 배경과<br /><span class="accent">트레이드오프</span></h1>
+
+  <!-- [수정 2] 태그: 글 frontmatter의 tags 배열과 동일하게 -->
+  <div class="chips">
+    <span class="chip"># react</span>
+    <span class="chip"># frontend</span>
+  </div>
+
+  <!-- [수정 3] 날짜: 글 frontmatter의 date와 동일하게 -->
+  <div class="meta">ARTICLE&ensp;·&ensp;2026-10-29</div>
+</body>
+</html>
