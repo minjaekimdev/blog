@@ -556,6 +556,12 @@ main {
   .post-layout > article {
     grid-column: 2;
     max-width: none;
+    /* 좁은 화면용 가운데 정렬(margin-inline: auto)이 남아 있으면 그리드 아이템의
+       stretch가 풀려, 긴 코드 블록의 min-content 폭만큼 본문이 트랙(44rem)을
+       넘어 목차 영역까지 침범한다. 넓은 화면에선 가운데 정렬이 그리드가 담당하므로
+       auto 마진을 풀고, min-width: 0으로 내용이 트랙을 밀어내지 않게 한다. */
+    margin-inline: 0;
+    min-width: 0;
   }
 
   .post-toc {
