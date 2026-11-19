@@ -1,7 +1,7 @@
 ---
 title: "React의 탄생 배경과 트레이드오프"
 description: "바닐라 JavaScript와 비교하며 이해하는 React의 설계 원리와 트레이드오프"
-thumbnail: ""
+thumbnail: "/thumbnails/react-background-tradeoff.png"
 date: 2026-10-29
 category: "article" 
 pinned: false
