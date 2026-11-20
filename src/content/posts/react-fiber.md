@@ -1,6 +1,7 @@
 ---
 title: '리액트 파이버 바닥부터 구현하기'
 description: '파이버를 직접 구현해 가며 리액트 동작 원리 이해하기'
+thumbnail: '/thumbnails/react-fiber.png'
 date: 2026-11-20
 category: 'article'
 tags: ['react', 'frontend']
