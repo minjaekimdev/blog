@@ -1,21 +1,124 @@
 ---
-title: '리액트 파이버 바닥부터 구현하기'
-description: '파이버를 직접 구현해 가며 리액트 동작 원리 이해하기'
-thumbnail: '/thumbnails/react-fiber.png'
+title: "리액트 파이버 바닥부터 구현하기"
+description: "파이버를 직접 구현해 가며 리액트 동작 원리 이해하기"
+thumbnail: "/thumbnails/react-fiber.png"
 date: 2026-11-20
-category: 'article'
-tags: ['react', 'frontend']
+category: "article"
+tags: ["react", "frontend"]
 ---
 
 `setState`를 호출하면 화면이 바뀌고, `useEffect`의 콜백은 화면이 그려진 뒤에 실행된다. React를 쓰면서 이 두 가지를 너무나 자연스럽게 받아들이다가, 막상 "그게 내부에서는 어떻게 가능하지?"라고 물었을 때 답하지 못했다. 상태는 어디에 기억되는지, 리렌더링은 누가 언제 예약하는지 알지 못했기 때문이다.
 
-이 글은 리액트의 핵심 자료구조인 <strong>파이버(fiber)</strong>를 직접 구현해 보며 이 물음에 답을 찾아간 기록이다. Didact(Build your own React)의 구현 방식을 따라 렌더와 커밋 페이즈의 전체 흐름을 먼저 잡고, 그 위에서 훅을 하나씩 얹는다. 이 글에서 다루는 것은 다음과 같다.
+이 글은 리액트의 핵심 자료구조인 <strong>파이버(fiber)</strong>를 직접 구현해 보며 이 물음에 답을 찾아간 기록이다. Didact(Build your own React)의 구현 방식을 따라 JSX가 작업 대기열에 도달하는 과정부터 렌더와 커밋 페이즈의 전체 흐름을 잡고, 그 위에서 훅을 하나씩 얹는다. 이 글에서 다루는 것은 다음과 같다.
 
-1. 렌더와 커밋 — 파이버 트리를 만들고 DOM에 반영하는 두 페이즈의 협업 방식
-2. 상태를 기억하는 훅 — useState, useRef, useMemo
-3. 렌더 이후에 실행되는 훅 — useEffect
+1. 렌더 페이즈 이전 — Babel 트랜스파일링부터 workLoop 예약까지, JSX가 처리할 작업 단위가 되기까지의 과정
+2. 렌더와 커밋 — 파이버 트리를 만들고 DOM에 반영하는 두 페이즈의 협업 방식
+3. 상태를 기억하는 훅 — useState, useRef, useMemo
+4. 렌더 이후에 실행되는 훅 — useEffect
 
 글은 진행 중이며, 훅 구현을 계속 추가해 가며 보완할 예정이다.
+
+## 렌더 페이즈 이전: Babel 트랜스파일링부터 workLoop까지
+
+렌더 페이즈가 파이버를 처리하기 시작하기 전에, JSX로 작성된 코드가 "처리할 작업 단위"가 되기까지의 과정이 있다.
+
+```
+Babel 트랜스파일링 → createElement → render → requestIdleCallback → workLoop
+     (번역)          (설계도 생성)  (첫 파이버)  (유휴 타임 실행 예약)  (렌더 페이즈 시작)
+```
+
+### Babel 트랜스파일링: JSX는 함수 호출의 축약 표현이다
+
+브라우저의 자바스크립트 엔진은 JSX를 이해하지 못한다. JSX는 자바스크립트 표준 문법이 아니라 UI를 편하게 표현하기 위한 확장 문법이기 때문이다. 그래서 실행되기 전에 반드시 순수 자바스크립트로 번역되어야 하고, 이 프로젝트에서는 Babel Standalone이 그 역할을 한다.
+
+`index.js` 첫 줄의 이 문장은 주석처럼 보이지만, Babel에 보내는 지시문이다.
+
+```jsx
+/** @jsx Didact.createElement */
+```
+
+"JSX를 만나면 `React.createElement`가 아니라 `Didact.createElement` 호출로 바꿔라"는 뜻이다.
+
+```jsx
+// 작성한 코드
+<div>
+  <h1>Title</h1>
+  Hello
+</div>
+
+// Babel이 번역한 코드
+Didact.createElement("div", null,
+  Didact.createElement("h1", null, "Title"),
+  "Hello"
+)
+```
+
+JSX는 그저 함수 호출의 축약 표현이다. 번역은 빌드 시점에 일어나고, 번역된 함수 호출은 그 코드가 실행되는 시점에 수행된다는 점만 구분하면 된다.
+
+### createElement: 설계도 객체를 만든다
+
+번역된 `createElement`가 하는 일은 하나다. "이런 모양의 UI를 만들어 달라"는 내용을 담은 순수 자바스크립트 객체를 반환하는 것. 이 객체를 엘리먼트, 즉 가상 DOM이라고 부른다.
+
+```jsx
+{
+  type: "div",
+  props: {
+    children: [
+      { type: "h1", /* ... */ },
+      // 문자열 자식은 텍스트 엘리먼트로 감싼다
+      { type: "TEXT_ELEMENT", props: { nodeValue: "Hello", children: [] } },
+    ],
+  },
+}
+```
+
+건축에 비유하면 설계도다. 이 시점에 실제 DOM 노드(벽돌)는 하나도 만들어지지 않는다.
+
+문자열 자식을 `createTextElement`로 감싸 텍스트도 `{ type, props }` 모양의 객체로 만드는 데에는 이유가 있다. 모든 노드가 같은 모양을 갖도록 통일해 두면, 이후 파이버 트리를 만들 때 모든 노드를 같은 방식으로 처리할 수 있다.
+
+### render: 첫 파이버를 만들어 대기열에 넣는다
+
+`Didact.render(<App />, container)`가 실행되면 설계도가 작업 지시서로 바뀐다.
+
+```jsx
+function render(element, container) {
+  // root 컨테이너에 대한 첫 파이버
+  wipRoot = {
+    dom: container,
+    props: { children: [element] },
+    alternate: currentRoot, // 초기 렌더링이므로 null
+  };
+  deletions = [];
+  nextUnitOfWork = wipRoot;
+}
+```
+
+여기서 엘리먼트와 파이버의 차이가 드러난다.
+
+|      | 엘리먼트                     | 파이버                                                                                      |
+| ---- | -------------------------- | ----------------------------------------------------------------------------------------- |
+| 정체 | "무엇을 그릴지"에 대한 설계도 | "지금 처리할 작업 단위"                                                                       |
+| 내용 | `type`, `props`            | 설계도 + 실제 DOM 참조(`dom`) + 트리 관계(`child`/`sibling`/`parent`) + 과거의 나(`alternate`) |
+
+중요한 것은 render가 공사를 직접 하지 않는다는 점이다. 실제 DOM을 건드리는 코드는 전혀 없고, 하는 일은 첫 파이버(`wipRoot`)를 만들어 `nextUnitOfWork`에 지정하는 것까지다. 작업 대기열에 첫 카드를 넣을 뿐이고, 실제 처리는 스케줄러가 가져간다.
+
+### requestIdleCallback: 유휴 시간에 workLoop를 부른다
+
+트리 전체를 재귀로 한 번에 처리하면 어떻게 될까. 자바스크립트 실행과 화면 그리기, 사용자 입력 처리가 전부 하나의 메인 스레드에서 순서대로 일어난다. 큰 트리를 한 번에 처리하면 그동안 클릭 반응과 화면 갱신이 멈추고(jank), 작은 클릭 하나에 페이지 전체가 버벅이는 상황이 생긴다.
+
+`requestIdleCallback(workLoop)`은 이 문제의 최소 해법이다. 브라우저에게 하는 부탁은 하나다.
+
+> "네 할 일(이벤트 처리, 화면 그리기)을 다 끝내고 놀고 있을 때 이 함수를 실행해 줘."
+
+동작 방식은 세 가지만 기억하면 된다.
+
+1. 브라우저는 한 프레임(≈16.6ms) 동안 할 일을 다 마치고 시간이 남으면, 대기 중인 콜백을 그 남은 시간에 실행한다.
+2. 호출 시점에 `deadline` 객체를 인자로 넣어준다. `deadline.timeRemaining()`은 프레임에 남은 시간을 알려주며, workLoop는 이 값을 보고 작업을 계속할지 브라우저에 양보할지 스스로 판단한다.
+3. 등록된 콜백은 딱 한 번만 호출된다.
+
+마지막 성질 때문에 workLoop는 실행이 끝날 때마다 자기 자신을 다시 등록한다. 이 예약은 didact.js가 로드되는 시점에 이미 걸려 있다. 결과적으로 workLoop는 영구 루프처럼 동작하는데, `nextUnitOfWork`가 비어 있는 동안에는 "할 일 없음"을 확인하고 재등록만 하다가, `render`나 `setState`가 `nextUnitOfWork`를 채워 넣으면 다음 유휴 타임에 자동으로 작업을 시작한다. 초기 렌더링과 리렌더링이 같은 파이프라인을 타는 이유가 바로 이 구조다.
+
+여기까지가 렌더 페이즈 이전의 전부다. 이렇게 시작점을 넘겨받은 workLoop가 파이버를 어떻게 잘게 쪼개 처리하는지는 다음 절에서 다룬다.
 
 ## 렌더와 커밋: 화면을 그리는 두 페이즈
 
@@ -305,12 +408,12 @@ function runEffectsInCurrentTree(fiber) {
 
 이펙트를 실행할지는 세 가지 조건으로 판단한다.
 
-| 조건 | 실행 여부 |
-| --- | --- |
-| 이전 렌더에 훅이 없다(마운트) | 실행 |
-| deps가 `undefined` | 매 렌더마다 실행 |
-| deps가 있고 이전과 하나라도 다르다 | 실행 |
-| deps가 빈 배열 `[]` | isDepsChanged가 항상 false → 재실행하지 않음 |
+| 조건                               | 실행 여부                                    |
+| ---------------------------------- | -------------------------------------------- |
+| 이전 렌더에 훅이 없다(마운트)      | 실행                                         |
+| deps가 `undefined`                 | 매 렌더마다 실행                             |
+| deps가 있고 이전과 하나라도 다르다 | 실행                                         |
+| deps가 빈 배열 `[]`                | isDepsChanged가 항상 false → 재실행하지 않음 |
 
 실행이 결정되면 이전에 보관해 둔 클린업을 먼저 실행하고, 실행 후의 반환값을 새 클린업으로 저장한다. 이번 렌더에서 실행하지 않기로 한 이펙트는 이전 클린업을 그대로 유지해야 한다. 나중에 이 이펙트가 실행될 때 사용될 수 있기 때문이다.
 
@@ -344,7 +447,7 @@ oldHook이 존재하면 새 객체를 만들지 않고 그대로 돌려준다. �
 
 ### ref로 DOM에 직접 접근하기
 
-가장 대표적인 사용처는 DOM 노드를 직접 다루는 일이다. React는 `ref` prop을 받은 요소를 마운트한 뒤 `ref.current`에 그 DOM 노드를 할당한다.
+가장 대표적인 사용처는 DOM 노드를 직접 다루는 일이다. React는 `ref` prop을 받은 요소를 마운트한 뒤 `ref.current`에 그 DOM 노드를 할당한다. (실제 `input`에는 ref 속성이 존재하지 않는다)
 
 ```jsx
 import React, { useRef } from "react";
@@ -390,7 +493,7 @@ function EmailForm() {
 export default EmailForm;
 ```
 
-`ref.current.value`를 직접 비워도 화면이 다시 그려지지 않는다. DOM에는 반영되지만 리렌더링을 유발하는 상태 변화가 아니기 때문이다. 값을 읽고, 포커스를 옮기고, DOM을 직접 고치는 등 화면 렌더링과 무관한 명령형 작업에 ref가 적합한 이유다.
+`ref.current.value`를 직접 비워도 React 컴포넌트는 리렌더링되지 않는다. DOM에는 반영되지만 리렌더링을 유발하는 상태 변화가 아니기 때문이다. 값을 읽고, 포커스를 옮기고, DOM을 직접 고치는 등 화면 렌더링과 무관한 명령형 작업에 ref가 적합한 이유다.
 
 ## useMemo: deps가 바뀔 때만 다시 계산한다
 
@@ -440,7 +543,7 @@ if (!oldHook || hasChangeDeps(oldHook.deps, deps)) {
 }
 ```
 
-useRef가 oldHook을 그대로 돌려주는 것은 객체 공유 자체가 기능이기 때문이다. 반면 훅 객체 안에 가변 상태를 두는 훅은 옛 트리의 객체를 그대로 쓰면 문제가 생긴다.
+useRef가 oldHook을 그대로 돌려주는 것은 리렌더링 방지 목적의 참조 동일성 유지를 위한 객체 공유 자체가 기능이기 때문이다. 반면 훅 객체 안에 가변 상태를 두는 훅은 옛 트리의 객체를 그대로 쓰면 문제가 생긴다.
 
 - **useState** — `hook.queue`는 setState 클로저가 계속 push하는 가변 배열이다. 옛 훅을 공유하면 어느 트리의 큐에 업데이트가 쌓이는지 애매해지고, 드레이닝 타이밍이 꼬인다.
 - **useEffect** — `hook.cleanup`은 `runEffects`가 계속 덮어쓰는 가변 필드다.
